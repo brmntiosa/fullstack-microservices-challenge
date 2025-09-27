@@ -5,32 +5,46 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 ---
 ## Screenshots
 
-<!-- Pusatkan 1 gambar lebar -->
-<p align="center">
-  <img src="docs/K6.png" alt="K6 Result" width="820">
-</p>
-
-<!-- Galeri 2 kolom -->
-<table>
-  <tr>
-    <td><img src="docs/bff.png" alt="BFF Combined" width="420"></td>
-    <td><img src="docs/combined-endpoints.png" alt="Combined Endpoint" width="420"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/create-product.png" alt="Create Product" width="420"></td>
-    <td><img src="docs/create-order.png" alt="Create Order" width="420"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/validation-error-handling.png" alt="HTTP Validation & Errors" width="420"></td>
-    <td><img src="docs/request-id-correlation-id.png" alt="Request ID / Correlation ID" width="420"></td>
-  </tr>
-</table>
-
-<!-- Opsional: collapsible -->
 <details>
-  <summary>Lihat juga: Go Error Envelope</summary>
-  <p><img src="docs/go-error-envelope.png" alt="Go Error Envelope" width="820"></p>
+  <summary>K6 Result (1000 req/s)</summary>
+  <p align="center"><img src="docs/k6.png" alt="K6 Result" width="820"></p>
 </details>
+
+<details>
+  <summary>BFF: /products/:id-with-orders</summary>
+  <p align="center"><img src="docs/bff.png" alt="BFF Combined Endpoint" width="820"></p>
+</details>
+
+<details>
+  <summary>Create Product</summary>
+  <p align="center"><img src="docs/create-product.png" alt="Create Product" width="820"></p>
+</details>
+
+<details>
+  <summary>Create Order</summary>
+  <p align="center"><img src="docs/create-order.png" alt="Create Order" width="820"></p>
+</details>
+
+<details>
+  <summary>Combined Endpoint (Produk + Orders)</summary>
+  <p align="center"><img src="docs/combined-endpoints.png" alt="Combined Endpoints" width="820"></p>
+</details>
+
+<details>
+  <summary>HTTP Validation & Error Handling (NestJS)</summary>
+  <p align="center"><img src="docs/validation-error-handling.png" alt="HTTP Validation & Error Handling" width="820"></p>
+</details>
+
+<details>
+  <summary>order-service (Go): Strict JSON + Error Envelope + Recover</summary>
+  <p align="center"><img src="docs/go-error-envelope.png" alt="Go Error Envelope & Recover" width="820"></p>
+</details>
+
+<details>
+  <summary>Request ID / Correlation ID</summary>
+  <p align="center"><img src="docs/request-id-correlation-id.png" alt="Request ID / Correlation ID" width="820"></p>
+</details>
+
 
 ---
 
