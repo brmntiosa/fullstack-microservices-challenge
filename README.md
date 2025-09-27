@@ -3,12 +3,6 @@
 Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service (Go)**. Event-driven via **RabbitMQ**, cache **Redis**, DB **MySQL**. Termasuk **BFF endpoint**, **validation & error handling**, **Request/Correlation ID**, **Jest 100% coverage**, dan **k6 load test 1000 req/s**.
 
 ---
-
-## Cuplikan
-
-> Simpan semua screenshot di folder `docs/` lalu commit. Ganti path bila perlu.
-
-
 ## Screenshots
 
 <!-- Pusatkan 1 gambar lebar -->
