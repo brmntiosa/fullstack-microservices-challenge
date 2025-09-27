@@ -8,7 +8,7 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 
 > Simpan semua screenshot di folder `docs/` lalu commit. Ganti path bila perlu.
 
-![K6 Result](docs/k6.png)
+![K6 Result](docs/K6.png)
 ![BFF Combined](docs/bff.png)
 ![Create Product](docs/create-product.png)
 ![Create Order](docs/create-order.png)
