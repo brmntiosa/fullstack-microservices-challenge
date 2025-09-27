@@ -1,0 +1,45 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: appdb
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    command:
+      - --innodb-flush-log-at-trx-commit=2
+      - --sync_binlog=0
+      - --innodb-buffer-pool-size=1G
+      - --max_connections=500
+    ports: ["3306:3306"]
+    volumes: [mysqldata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -u$$MYSQL_USER -p$$MYSQL_PASSWORD -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+
+  product-service:
+    build: ../product-service
+    env_file: ../product-service/.env
+    environment:
+      - ORDERS_BASE=http://order-service:4000   # ← tambah ini
+    depends_on: [mysql, redis, rabbitmq]
+    ports: ["3000:3000"]
+
+  order-service:
+    build: ../order-service
+    env_file: ../order-service/.env
+    depends_on: [mysql, redis, rabbitmq, product-service]
+    ports: ["4000:4000"]
+
+volumes:
+  mysqldata:
