@@ -329,7 +329,3 @@ docker run --rm -i --network infra_default ^
 ```
 
 ---
-
-## Lisensi
-
-Bebas digunakan untuk keperluan test/assessment. Untuk produksi, sesuaikan konfigurasi keamanan, observability, dan environment.
