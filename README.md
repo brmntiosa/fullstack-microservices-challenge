@@ -8,14 +8,35 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 
 > Simpan semua screenshot di folder `docs/` lalu commit. Ganti path bila perlu.
 
-![K6 Result](docs/K6.png)
-![BFF Combined](docs/bff.png)
-![Create Product](docs/create-product.png)
-![Create Order](docs/create-order.png)
-![Combined Endpoint](docs/combined-endpoints.png)
-![HTTP Validation](docs/validation-error-handling.png)
-![Go Error Envelope](docs/go-error-envelope.png)
-![Request ID](docs/request-id-correlation-id.png)
+
+## Screenshots
+
+<!-- Pusatkan 1 gambar lebar -->
+<p align="center">
+  <img src="docs/k6.png" alt="K6 Result" width="820">
+</p>
+
+<!-- Galeri 2 kolom -->
+<table>
+  <tr>
+    <td><img src="docs/bff.png" alt="BFF Combined" width="420"></td>
+    <td><img src="docs/combined-endpoints.png" alt="Combined Endpoint" width="420"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/create-product.png" alt="Create Product" width="420"></td>
+    <td><img src="docs/create-order.png" alt="Create Order" width="420"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/validation-error-handling.png" alt="HTTP Validation & Errors" width="420"></td>
+    <td><img src="docs/request-id-correlation-id.png" alt="Request ID / Correlation ID" width="420"></td>
+  </tr>
+</table>
+
+<!-- Opsional: collapsible -->
+<details>
+  <summary>Lihat juga: Go Error Envelope</summary>
+  <p><img src="docs/go-error-envelope.png" alt="Go Error Envelope" width="820"></p>
+</details>
 
 ---
 
