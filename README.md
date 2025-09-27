@@ -77,7 +77,33 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 3. product-service consume event → decrement stok + invalidate cache.
 
 ---
+### Environment Variables (.env)
 
+* Setiap service dikonfigurasi melalui berkas **`.env`** (koneksi database, Redis, RabbitMQ, serta base URL antar-service).
+
+* Template **`.env.example`** sudah tersedia di masing-masing service, salin menjadi `.env`, lalu sesuaikan nilainya bila diperlukan.
+
+* **Cara pakai:**
+
+  * **Linux/macOS**
+
+    ```bash
+    cp product-service/.env.example product-service/.env
+    cp order-service/.env.example   order-service/.env
+    ```
+  * **Windows PowerShell**
+
+    ```powershell
+    Copy-Item product-service/.env.example product-service/.env
+    Copy-Item order-service/.env.example   order-service/.env
+    ```
+  * **Windows CMD**
+
+    ```cmd
+    copy product-service\.env.example product-service\.env
+    copy order-service\.env.example   order-service\.env
+    ```
+    
 ## Cara Menjalankan (Docker Compose)
 
 ```bash
