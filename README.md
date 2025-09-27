@@ -3,22 +3,50 @@
 Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service (Go)**. Event-driven via **RabbitMQ**, cache **Redis**, DB **MySQL**. Termasuk **BFF endpoint**, **validation & error handling**, **Request/Correlation ID**, **Jest 100% coverage**, dan **k6 load test 1000 req/s**.
 
 ---
+## Screenshots
+<small><em>Klik judul di bawah ini untuk membuka/menutup pratinjau.</em></small>
 
-## Cuplikan
+<details>
+  <summary>K6 Result (1000 req/s)</summary>
+  <p align="center"><img src="docs/K6.png" alt="K6 Result" width="820"></p>
+</details>
 
-> Simpan semua screenshot di folder `docs/` lalu commit. Ganti path bila perlu.
+<details>
+  <summary>BFF: /products/:id-with-orders</summary>
+  <p align="center"><img src="docs/bff.png" alt="BFF Combined Endpoint" width="820"></p>
+</details>
 
-![K6 Result](docs/k6.png)
-![BFF Combined](docs/bff.png)
-![Create Product](docs/create-product.png)
-![Create Order](docs/create-order.png)
-![Combined Endpoint](docs/combined-endpoints.png)
-![HTTP Validation](docs/validation-error-handling.png)
-![Go Error Envelope](docs/go-error-envelope.png)
-![Request ID](docs/request-id-correlation-id.png)
+<details>
+  <summary>Create Product</summary>
+  <p align="center"><img src="docs/create-product.png" alt="Create Product" width="820"></p>
+</details>
+
+<details>
+  <summary>Create Order</summary>
+  <p align="center"><img src="docs/create-order.png" alt="Create Order" width="820"></p>
+</details>
+
+<details>
+  <summary>Combined Endpoint (Produk + Orders)</summary>
+  <p align="center"><img src="docs/combined-endpoints.png" alt="Combined Endpoints" width="820"></p>
+</details>
+
+<details>
+  <summary>HTTP Validation & Error Handling (NestJS)</summary>
+  <p align="center"><img src="docs/validation-error-handling.png" alt="HTTP Validation & Error Handling" width="820"></p>
+</details>
+
+<details>
+  <summary>order-service (Go): Strict JSON + Error Envelope + Recover</summary>
+  <p align="center"><img src="docs/go-error-envelope.png" alt="Go Error Envelope & Recover" width="820"></p>
+</details>
+
+<details>
+  <summary>Request ID / Correlation ID</summary>
+  <p align="center"><img src="docs/request-id-correlation-id.png" alt="Request ID / Correlation ID" width="820"></p>
+</details>
 
 ---
-
 ## Arsitektur Singkat
 
 * **product-service (NestJS)**
@@ -301,7 +329,3 @@ docker run --rm -i --network infra_default ^
 ```
 
 ---
-
-## Lisensi
-
-Bebas digunakan untuk keperluan test/assessment. Untuk produksi, sesuaikan konfigurasi keamanan, observability, dan environment.
