@@ -4,6 +4,7 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 
 ---
 ## Screenshots
+<small><em>Klik judul di bawah ini untuk membuka/menutup pratinjau.</em></small>
 
 <details>
   <summary>K6 Result (1000 req/s)</summary>
@@ -44,8 +45,6 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
   <summary>Request ID / Correlation ID</summary>
   <p align="center"><img src="docs/request-id-correlation-id.png" alt="Request ID / Correlation ID" width="820"></p>
 </details>
-
-
 ---
 
 ## Arsitektur Singkat
