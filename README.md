@@ -7,7 +7,7 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 
 <details>
   <summary>K6 Result (1000 req/s)</summary>
-  <p align="center"><img src="docs/k6.png" alt="K6 Result" width="820"></p>
+  <p align="center"><img src="docs/K6.png" alt="K6 Result" width="820"></p>
 </details>
 
 <details>
