@@ -13,7 +13,7 @@ Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service 
 
 <!-- Pusatkan 1 gambar lebar -->
 <p align="center">
-  <img src="docs/k6.png" alt="K6 Result" width="820">
+  <img src="docs/K6.png" alt="K6 Result" width="820">
 </p>
 
 <!-- Galeri 2 kolom -->
