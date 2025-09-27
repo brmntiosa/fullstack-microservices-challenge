@@ -4,7 +4,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { CLIENTS } from '../shared/tokens';
 
-/** ==== tipe bantu ==== */
 type Product = { id: number; name: string; price: number; qty: number; createdAt: string };
 
 type RedisGetFn = (key: string) => Promise<string | null>;
@@ -12,7 +11,6 @@ type RedisSetFn = (key: string, value: string, mode: 'EX', ttl: number) => Promi
 type RedisDelFn = (key: string) => Promise<any>;
 
 type PrismaCallFn<T = any> = (args: any) => Promise<T>;
-// ==== type helper untuk AMQP channel ====
 type AmqpPublishFn     = (exchange: string, routingKey: string, content: Buffer, options?: any) => boolean | Promise<boolean>;
 type AmqpAssertQueueFn = (queue: string, options?: any) => Promise<any>;
 type AmqpBindQueueFn   = (queue: string, source: string, pattern: string, args?: any) => Promise<void>;
@@ -20,7 +18,6 @@ type AmqpConsumeFn     = (queue: string, onMessage: (msg: any) => any, options?:
 type AmqpAckFn         = (msg: any, allUpTo?: boolean) => void;
 type AmqpNackFn        = (msg: any, allUpTo?: boolean, requeue?: boolean) => void;
 
-// ==== mocks (redeclare amqpChannel dengan tipe yang spesifik) ====
 const amqpChannel = {
   publish:     jest.fn() as jest.MockedFunction<AmqpPublishFn>,
   assertQueue: jest.fn() as jest.MockedFunction<AmqpAssertQueueFn>,
@@ -31,7 +28,6 @@ const amqpChannel = {
 };
 
 
-/** ==== mocks ==== */
 const redis = {
   get: jest.fn() as jest.MockedFunction<RedisGetFn>,
   set: jest.fn() as jest.MockedFunction<RedisSetFn>,
@@ -48,10 +44,6 @@ const prisma = {
   },
 };
 
-/**
- * Channel AMQP yang kita butuhkan hanya method-method ini.
- * Semua kita mock agar bisa di-spy & di-invoke manual.
- */
 
 describe('ProductsService (cache + invalidate + events)', () => {
   let service: ProductsService;
@@ -81,7 +73,6 @@ describe('ProductsService (cache + invalidate + events)', () => {
     const now = new Date().toISOString();
     prisma.product.create.mockResolvedValue({ id: 10, name: 'X', price: 1, qty: 1, createdAt: now });
   
-    // Simulasikan kegagalan publish TANPA throw (hindari unhandled rejection)
     (amqpChannel.publish as any).mockResolvedValue(false);
   
     const res = await service.create({ name: 'X', price: 1, qty: 1 });
@@ -142,7 +133,7 @@ describe('ProductsService (cache + invalidate + events)', () => {
     expect(res).toMatchObject({ id: 3, name: 'Headset' });
   });
 
-  /** === Tambahan 1: cover create() termasuk publish event === */
+
   it('create() → simpan DB dan publish event', async () => {
     (prisma.product.create as jest.MockedFunction<PrismaCallFn<Product>>).mockResolvedValue({
       id: 9, name: 'Webcam', price: 250000, qty: 10, createdAt: new Date().toISOString(),
@@ -154,16 +145,15 @@ describe('ProductsService (cache + invalidate + events)', () => {
       data: { name: 'Webcam', price: 250000, qty: 10 },
     });
 
-    // publish dipanggil dengan routing key 'product.created'
+ 
     expect(amqpChannel.publish).toHaveBeenCalledWith(
-      expect.any(String),      // exchange (bisa 'orders' atau env override)
+      expect.any(String),      
       'product.created',
       expect.any(Buffer),
     );
     expect(res).toMatchObject({ id: 9, name: 'Webcam' });
   });
 
-  /** === Tambahan 2: cover onModuleInit() → consume order.created === */
   it('onModuleInit() → consume order.created → decrement qty & invalidate cache', async () => {
     const fakeMsg: any = {
       content: Buffer.from(JSON.stringify({
@@ -175,7 +165,6 @@ describe('ProductsService (cache + invalidate + events)', () => {
       })),
     };
   
-    // mock consume: saat dipanggil, langsung trigger callback
     (amqpChannel.consume as jest.MockedFunction<AmqpConsumeFn>)
       .mockImplementation(async (_queue, cb) => {
         cb(fakeMsg);
@@ -186,7 +175,6 @@ describe('ProductsService (cache + invalidate + events)', () => {
       id: 2, name: 'Mouse', price: 340000, qty: 97, createdAt: new Date().toISOString(),
     });
   
-    // redis.del mengembalikan angka (jumlah key terhapus) — anggap 1
     redis.del.mockResolvedValue(1);
   
     await service.onModuleInit();
@@ -204,11 +192,8 @@ describe('ProductsService (cache + invalidate + events)', () => {
   
   it('onModuleInit → invalid message → nack (requeue=true)', async () => {
     const badMsg: any = { content: Buffer.from('not-json') };
-  
-    // mute console.error so the SyntaxError from JSON.parse doesn't clutter test output
     const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   
-    // mock consume: immediately invoke the callback with an invalid message
     (amqpChannel.consume as any).mockImplementation(async (_q: string, cb: any) => {
       cb(badMsg);
       return { consumerTag: 't' };
@@ -216,23 +201,20 @@ describe('ProductsService (cache + invalidate + events)', () => {
   
     await service.onModuleInit();
   
-    // your service uses nack(msg, false, true) → requeue = true
     expect(amqpChannel.nack).toHaveBeenCalledWith(badMsg, false, true);
     expect(prisma.product.update).not.toHaveBeenCalled();
   
     errSpy.mockRestore();
   });
   it('onModuleInit → consume callback dapat null msg → early return (no ack/nack)', async () => {
-    // Saat consume dipanggil, langsung invoke callback dengan null
     (amqpChannel.consume as jest.MockedFunction<AmqpConsumeFn>)
       .mockImplementation(async (_queue, cb) => {
-        cb(null as any); // <- trigger path if (!msg) return
+        cb(null as any); 
         return { consumerTag: 't' };
       });
   
     await service.onModuleInit();
   
-    // Tidak ada efek samping apa pun
     expect(prisma.product.update).not.toHaveBeenCalled();
     expect(redis.del).not.toHaveBeenCalled();
     expect(amqpChannel.ack).not.toHaveBeenCalled();
@@ -240,12 +222,11 @@ describe('ProductsService (cache + invalidate + events)', () => {
   });
   
   it('onModuleInit → invalid numeric payload (NaN) → warn & ack (no update)', async () => {
-    // JSON VALID tapi nilai numeriknya tidak valid (akan jadi NaN di parse)
     const badNumericMsg: any = {
       content: Buffer.from(JSON.stringify({
         orderId: 123,
-        productId: 'x',   // tidak valid number
-        qty: 'y',         // tidak valid number
+        productId: 'x',   
+        qty: 'y',       
         totalPrice: 999,
         createdAt: new Date().toISOString(),
       })),
@@ -253,7 +234,6 @@ describe('ProductsService (cache + invalidate + events)', () => {
   
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
   
-    // Saat consume dipanggil, langsung trigger callback dengan payload di atas
     (amqpChannel.consume as any).mockImplementation(async (_q: string, cb: any) => {
       cb(badNumericMsg);
       return { consumerTag: 't' };
@@ -261,11 +241,11 @@ describe('ProductsService (cache + invalidate + events)', () => {
   
     await service.onModuleInit();
   
-    expect(console.warn).toHaveBeenCalled();               // guard log terpanggil
-    expect(amqpChannel.ack).toHaveBeenCalledWith(badNumericMsg);  // ACK (bukan NACK)
-    expect(amqpChannel.nack).not.toHaveBeenCalled();       // tidak requeue
-    expect(prisma.product.update).not.toHaveBeenCalled();  // tidak ada decrement
-    expect(redis.del).not.toHaveBeenCalled();              // tidak ada invalidasi cache
+    expect(console.warn).toHaveBeenCalled();              
+    expect(amqpChannel.ack).toHaveBeenCalledWith(badNumericMsg);  
+    expect(amqpChannel.nack).not.toHaveBeenCalled();      
+    expect(prisma.product.update).not.toHaveBeenCalled();  
+    expect(redis.del).not.toHaveBeenCalled();              
   
     warnSpy.mockRestore();
   });

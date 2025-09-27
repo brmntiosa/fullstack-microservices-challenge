@@ -18,7 +18,6 @@ export class ProductsController {
 
   @Get(':id')
   getById(@Param('id', ParseIntPipe) id: number) {
-    // Coerce untuk unit test yang memanggil langsung tanpa pipeline
     const n = typeof id === 'number' ? id : Number(id);
     if (Number.isNaN(n)) throw new BadRequestException('Invalid id');
     return this.svc.getById(n);

@@ -14,7 +14,6 @@ type Product = {
   createdAt: string;
 };
 
-// ---- Typed mocks ----
 type ProductsServiceMock = {
   getById: jest.MockedFunction<(id: number) => Promise<Product>>;
 };
@@ -36,7 +35,6 @@ describe('ProductsBffController', () => {
     };
 
     http = {
-      // default: sukses (orders ada 1)
       get: jest.fn((_url: string) =>
         of({
           status: 200,
@@ -58,7 +56,7 @@ describe('ProductsBffController', () => {
       controllers: [ProductsBffController],
       providers: [
         { provide: ProductsService, useValue: svc },
-        { provide: HttpService, useValue: http }, // <<< injeksi HttpService mock
+        { provide: HttpService, useValue: http }, 
       ],
     }).compile();
 
@@ -71,13 +69,10 @@ describe('ProductsBffController', () => {
     };
     svc.getById.mockResolvedValue(product);
 
-    // ⚠️ ganti nama method jika berbeda di controller kamu:
     const res = await (ctrl as any).getWithOrders(20);
 
     expect(svc.getById).toHaveBeenCalledWith(20);
-    // pastikan HttpService dipanggil ke endpoint orders by product
     expect(http.get).toHaveBeenCalledWith(`${process.env.ORDERS_BASE}/orders/product/20`);
-
     expect(res).toMatchObject({
       product: { id: 20 },
       orders: expect.any(Array),
@@ -90,7 +85,6 @@ describe('ProductsBffController', () => {
     };
     svc.getById.mockResolvedValue(product);
 
-    // Simulasikan orders API 500
     http.get.mockImplementationOnce((_url: string) =>
       of({ status: 500, data: {} }),
     );

@@ -10,7 +10,7 @@ func WithRecover(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				log.Printf("[panic] %v", rec)
-				// gunakan helper error JSON-mu
+
 				writeErr(w, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "internal server error")
 			}
 		}()

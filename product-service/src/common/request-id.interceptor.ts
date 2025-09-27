@@ -9,7 +9,7 @@ export class RequestIdInterceptor implements NestInterceptor {
     const res = ctx.switchToHttp().getResponse();
 
     let rid: string | undefined = req.headers['x-request-id'] as string | undefined;
-    if (!rid) rid = randomUUID(); // ← pakai built-in Node.js
+    if (!rid) rid = randomUUID(); 
 
     (req as any).requestId = rid;
 

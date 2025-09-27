@@ -18,13 +18,11 @@ import (
 	"order-service/internal/repo"
 )
 
-// ===== cache entry =====
 type productCacheEntry struct {
 	price     float64
 	expiresAt time.Time
 }
 
-// ===== error envelope & helpers =====
 type apiError struct {
 	Code    string      `json:"code"`
 	Message string      `json:"message"`
@@ -49,7 +47,6 @@ func writeErr(w http.ResponseWriter, status int, code, msg string, details ...in
 	})
 }
 
-// ===== mux =====
 type Mux struct {
 	mux         *http.ServeMux
 	repo        repo.Store
@@ -57,10 +54,8 @@ type Mux struct {
 	amqpCh      *amqp.Channel
 	productBase string
 
-	// reusable HTTP client (transport sudah di-tune di main.go)
 	httpClient *http.Client
 
-	// in-memory cache + flag SWR
 	mu           sync.RWMutex
 	productCache map[int]productCacheEntry
 	refreshing   map[int]bool
@@ -85,11 +80,10 @@ func (h *Mux) routes() {
 	h.mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"status": "order-service up"})
 	})
-	h.mux.HandleFunc("/orders", h.createOrder)                 // POST
-	h.mux.HandleFunc("/orders/product/", h.getOrdersByProduct) // GET /orders/product/{id}
+	h.mux.HandleFunc("/orders", h.createOrder)                 
+	h.mux.HandleFunc("/orders/product/", h.getOrdersByProduct) 
 }
 
-// ===== types =====
 type createOrderReq struct {
 	ProductID int `json:"productId"`
 	Qty       int `json:"qty"`
@@ -100,9 +94,6 @@ type productResp struct {
 	Price float64 `json:"price"`
 }
 
-// ===== handlers =====
-
-// POST /orders
 func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeErr(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "only POST is allowed")
@@ -114,8 +105,7 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Limit body & strict JSON
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) 
 	defer r.Body.Close()
 	var req createOrderReq
 	dec := json.NewDecoder(r.Body)
@@ -129,7 +119,6 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// === 1) VALIDASI PRODUK: cache 25–35s + SWR ===
 	now := time.Now()
 
 	h.mu.RLock()
@@ -141,24 +130,21 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case ok && now.Before(ce.expiresAt):
-		// HIT
 		prod = productResp{ID: req.ProductID, Price: ce.price}
 
 	case ok && now.After(ce.expiresAt):
-		// EXPIRED → serve stale, revalidate di background (satu goroutine saja)
 		prod = productResp{ID: req.ProductID, Price: ce.price}
 
 		if !isRefreshing {
 			h.mu.Lock()
 			if !h.refreshing[req.ProductID] {
 				h.refreshing[req.ProductID] = true
-				go h.refreshPrice(req.ProductID) // background refresh
+				go h.refreshPrice(req.ProductID) 
 			}
 			h.mu.Unlock()
 		}
 
 	default:
-		// COLD MISS → sinkron call ke product-service
 		ctx, cancel := context.WithTimeout(r.Context(), 2500*time.Millisecond)
 		defer cancel()
 
@@ -182,7 +168,7 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ttl := 25*time.Second + time.Duration(rand.Intn(10))*time.Second // 25–35s
+		ttl := 25*time.Second + time.Duration(rand.Intn(10))*time.Second 
 		h.mu.Lock()
 		h.productCache[req.ProductID] = productCacheEntry{
 			price:     prod.Price,
@@ -191,7 +177,6 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 		h.mu.Unlock()
 	}
 
-	// === 2) hitung total & insert DB ===
 	total := float64(req.Qty) * prod.Price
 	id, err := h.repo.InsertOrder(&repo.Order{
 		ProductID:  req.ProductID,
@@ -204,7 +189,6 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// === 3) publish event order.created (best-effort) ===
 	evt := map[string]any{
 		"orderId":    id,
 		"productId":  req.ProductID,
@@ -220,14 +204,11 @@ func (h *Mux) createOrder(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[warn] publish order.created failed: %v", pubErr)
 	}
 
-	// === 4) invalidate cache Redis untuk daftar orders per product ===
 	_ = h.rdb.Del(context.Background(), fmt.Sprintf("orders:product:%d", req.ProductID)).Err()
 
-	// === 5) response ===
 	writeJSON(w, http.StatusCreated, evt)
 }
 
-// GET /orders/product/{id}
 func (h *Mux) getOrdersByProduct(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeErr(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "only GET is allowed")
@@ -243,7 +224,6 @@ func (h *Mux) getOrdersByProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	key := fmt.Sprintf("orders:product:%d", pid)
 
-	// cache first (Redis)
 	if s, err := h.rdb.Get(ctx, key).Result(); err == nil && s != "" {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(s))
@@ -256,7 +236,7 @@ func (h *Mux) getOrdersByProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ords == nil {
-		ords = []repo.Order{} // pastikan [] bukan null
+		ords = []repo.Order{} 
 	}
 	b, _ := json.Marshal(ords)
 	_ = h.rdb.Set(ctx, key, b, time.Minute).Err()
@@ -265,7 +245,6 @@ func (h *Mux) getOrdersByProduct(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(b)
 }
 
-// ===== background refresh (SWR) =====
 func (h *Mux) refreshPrice(pid int) {
 	defer func() {
 		h.mu.Lock()
@@ -282,7 +261,7 @@ func (h *Mux) refreshPrice(pid int) {
 
 	resp, err := h.httpClient.Do(httpReq)
 	if err != nil {
-		return // biarkan stale tetap dipakai sampai refresh berikutnya
+		return 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

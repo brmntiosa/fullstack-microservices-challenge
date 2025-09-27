@@ -12,8 +12,6 @@ export type Clients = {
 export async function createClients(): Promise<Clients> {
   const prisma = new PrismaClient();
   const redis = new Redis(process.env.REDIS_URL!);
-
-  // boleh juga tanpa anotasi agar inference mengunci tipe yang benar:
   const amqpConn: Connection = await amqp.connect(process.env.RABBIT_URL!);
   const amqpChannel: Channel = await amqpConn.createChannel();
 

@@ -1,17 +1,17 @@
-# Node / Nest
+
 node_modules/
 dist/
 coverage/
 .env
 
-# Go
+
 bin/
 *.exe
 
-# Docker local volume
+
 infra/mysqldata/
 
-# k6 outputs (ignore semua kecuali bukti)
+
 k6/*
 !k6/orders.test.js
 !k6/k6-results-docker.json

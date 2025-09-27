@@ -2,7 +2,6 @@ import { Controller, Get, Param, ParseIntPipe, Req } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ProductsService } from './products.service';
-// (opsional) kalau kamu pakai Fastify:
 import type { FastifyRequest } from 'fastify';
 
 type OrderDto = {
@@ -21,19 +20,15 @@ export class ProductsBffController {
     private readonly http: HttpService,
   ) {}
 
-  // GET /products/:id-with-orders
-  // Gabungkan product (local) + orders (order-service).
-  // - Teruskan X-Request-ID untuk korelasi log
-  // - Graceful: non-200 / timeout => orders: []
   @Get(':id-with-orders')
   async getWithOrders(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: FastifyRequest, // atau: @Req() req: any
+    @Req() req: FastifyRequest, 
   ) {
     const product = await this.svc.getById(id);
 
     const ordersBase = process.env.ORDERS_BASE ?? 'http://order-service:4000';
-    const rid = (req as any).requestId as string | undefined; // diisi oleh RequestIdInterceptor
+    const rid = (req as any).requestId as string | undefined; 
 
     try {
       const resp = await lastValueFrom(
@@ -42,8 +37,8 @@ export class ProductsBffController {
             'X-Request-ID': rid ?? '',
             'Accept': 'application/json',
           },
-          timeout: 2500,                     // ms
-          validateStatus: () => true,        // jangan throw untuk non-2xx
+          timeout: 2500,                   
+          validateStatus: () => true,  
         }),
       );
 
@@ -51,7 +46,7 @@ export class ProductsBffController {
       const orders = isOk && Array.isArray(resp.data) ? resp.data : [];
       return { product, orders };
     } catch {
-      // network error / timeout
+   
       return { product, orders: [] };
     }
   }

@@ -1,5 +1,4 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-// src/products/products.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
@@ -13,7 +12,6 @@ type Product = {
   createdAt: string;
 };
 
-// Definisikan tipe fungsi untuk tiap method service
 type CreateFn = (dto: any) => Promise<Product>;
 type GetByIdFn = (id: number) => Promise<Product>;
 type GetAllFn = () => Promise<Product[]>;
@@ -23,7 +21,6 @@ type RemoveFn = (id: number) => Promise<{ id: number }>;
 describe('ProductsController', () => {
   let controller: ProductsController;
 
-  // Mock service dengan tipe yang stabil menggunakan MockedFunction
   const svc = {
     create:  jest.fn() as jest.MockedFunction<CreateFn>,
     getById: jest.fn() as jest.MockedFunction<GetByIdFn>,
@@ -48,7 +45,6 @@ describe('ProductsController', () => {
 
     svc.create.mockResolvedValue({ id: 1, name: 'A', price: 10, qty: 5, createdAt: now });
 
-    // Unit test tidak menjalankan pipeline (ParseIntPipe, ValidationPipe, dll)
     await expect((controller as any).create(dto)).resolves.toEqual({
       id: 1, name: 'A', price: 10, qty: 5, createdAt: now,
     });
@@ -59,13 +55,11 @@ describe('ProductsController', () => {
     const now = new Date().toISOString();
     svc.getById.mockResolvedValue({ id: 1, name: 'A', price: 10, qty: 5, createdAt: now });
 
-    // Kirim '1' (string) untuk mensimulasikan @Param('id') id: string
     await expect((controller as any).getById('1')).resolves.toMatchObject({
       id: 1,
       createdAt: expect.any(String),
     });
 
-    // Pastikan controller mengonversi '1' → 1 saat memanggil service
     expect(svc.getById).toHaveBeenCalledWith(1);
   });
 
@@ -118,7 +112,7 @@ describe('ProductsController', () => {
     await expect((controller as any).remove(7)).resolves.toEqual({ id: 7 });
     expect(svc.remove).toHaveBeenCalledWith(7);
   });
-  
+
   it('getById menerima number langsung (tanpa konversi)', async () => {
     const now = new Date().toISOString();
     svc.getById.mockResolvedValue({ id: 2, name: 'N', price: 1, qty: 1, createdAt: now });

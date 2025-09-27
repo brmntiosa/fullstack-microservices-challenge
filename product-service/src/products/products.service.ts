@@ -17,7 +17,6 @@ export class ProductsService implements OnModuleInit {
   constructor(@Inject(CLIENTS) private readonly c: Clients) {}
 
   async onModuleInit() {
-    // Subscribe to order.created → reduce qty
     const ex = process.env.RABBIT_EXCHANGE ?? 'orders';
     const queue = 'product-service__order-created';
 
@@ -32,8 +31,7 @@ export class ProductsService implements OnModuleInit {
         const qty = Number(payload.qty);
 
         if (Number.isNaN(productId) || Number.isNaN(qty)) {
-          // gunakan gaya log Fastify/Pino: object payload
-          // (jika perlu akses logger Nest, bisa via Logger)
+
           console.warn({ msg: 'Invalid order.created payload', payload });
           this.c.amqpChannel.ack(msg);
           return;
@@ -44,18 +42,18 @@ export class ProductsService implements OnModuleInit {
           data:  { qty: { decrement: qty } },
         });
 
-        await this.c.redis.del(`product:${productId}`); // invalidate cache
+        await this.c.redis.del(`product:${productId}`); 
         this.c.amqpChannel.ack(msg);
       } catch (e) {
         console.error(e);
-        this.c.amqpChannel.nack(msg, false, true); // requeue
+        this.c.amqpChannel.nack(msg, false, true); 
       }
     }, { noAck: false });
   }
 
   async create(dto: { name: string; price: number; qty: number }) {
     const created = await this.c.prisma.product.create({ data: dto });
-    // optional: publish product.created (boleh dihapus jika tak diperlukan)
+   
     await this.c.amqpChannel.publish(
       process.env.RABBIT_EXCHANGE ?? 'orders',
       'product.created',
@@ -89,13 +87,13 @@ export class ProductsService implements OnModuleInit {
       where: { id },
       data: dto,
     });
-    await this.c.redis.del(`product:${id}`); // invalidate cache detail
+    await this.c.redis.del(`product:${id}`); 
     return updated;
   }
   
   async remove(id: number) {
     const deleted = await this.c.prisma.product.delete({ where: { id } });
-    await this.c.redis.del(`product:${id}`); // invalidate cache detail
+    await this.c.redis.del(`product:${id}`); 
     return deleted;
   }
 }

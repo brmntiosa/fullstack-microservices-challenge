@@ -1,7 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-// === TARGET FINAL: 1000 req/s selama 30 detik ===
 export const options = {
   scenarios: {
     warm: {
@@ -19,7 +18,7 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 1000, timeUnit: '1s', duration: '30s',
       preAllocatedVUs: 400, maxVUs: 4000,
-      startTime: '30s', // mulai setelah warm selesai
+      startTime: '30s', 
     },
   },
   thresholds: {
@@ -28,14 +27,10 @@ export const options = {
   },
 };
 
-// Dipanggil sekali di awal: buat produk + pre-warm cache
 export function setup() {
   const PRODUCTS = __ENV.BASE_URL_PRODUCTS;
   const ORDERS   = __ENV.BASE_URL_ORDERS;
-
   const headers = { headers: { 'Content-Type': 'application/json' } };
-
-  // 1) create product (atau pakai produk existing kalau kamu mau)
   const create = http.post(`${PRODUCTS}/products`, JSON.stringify({
     name: 'LoadTest Item',
     price: 1000,
@@ -43,10 +38,7 @@ export function setup() {
   }), headers);
   const product = create.json();
 
-  // 2) warm Redis product-service
   http.get(`${PRODUCTS}/products/${product.id}`);
-
-  // 3) warm in-memory cache order-service
   http.post(`${ORDERS}/orders`, JSON.stringify({
     productId: product.id,
     qty: 1,
@@ -55,14 +47,13 @@ export function setup() {
   return { productId: product.id };
 }
 
-// Entry point tiap iterasi: kirim order
 export default function (data) {
   const ORDERS = __ENV.BASE_URL_ORDERS;
   const headers = { headers: { 'Content-Type': 'application/json' } };
 
   const res = http.post(`${ORDERS}/orders`, JSON.stringify({
     productId: data.productId,
-    qty: 1,                // boleh kamu random-kan kalau mau
+    qty: 1,                
   }), headers);
 
   check(res, {

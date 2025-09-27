@@ -12,13 +12,11 @@ type Repo struct {
 }
 
 func NewRepo(db *sqlx.DB) *Repo {
-	// Siapkan prepared statement sekali, reuse untuk tiap insert
 	stmt, err := db.Preparex(`
 		INSERT INTO orders (productId, qty, totalPrice, status)
 		VALUES (?, ?, ?, ?)
 	`)
 	if err != nil {
-		// di service lokal/test, panic oke; di prod sebaiknya propagate error
 		panic(err)
 	}
 	return &Repo{DB: db, insertStmt: stmt}
@@ -34,7 +32,6 @@ type Order struct {
 }
 
 func (r *Repo) InsertOrder(o *Order) (int64, error) {
-	// Pakai ExecContext (kalau nanti mau dihiasi ctx timeout/cancel dari caller)
 	res, err := r.insertStmt.ExecContext(
 		context.Background(),
 		o.ProductID, o.Qty, o.TotalPrice, o.Status,
@@ -54,14 +51,12 @@ func (r *Repo) OrdersByProduct(productID int) ([]Order, error) {
         ORDER BY id DESC
     `, productID)
 
-    // pastikan bukan nil agar JSON jadi [] bukan null
     if out == nil {
         out = make([]Order, 0)
     }
     return out, err
 }
 
-// (Opsional) panggil saat shutdown agar stmt tertutup rapi.
 func (r *Repo) Close() error {
 	if r.insertStmt != nil {
 		return r.insertStmt.Close()
