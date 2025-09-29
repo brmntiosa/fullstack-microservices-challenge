@@ -17,8 +17,9 @@ type Product = {
 type ProductsServiceMock = {
   getById: jest.MockedFunction<(id: number) => Promise<Product>>;
 };
+
 type HttpServiceMock = {
-  get: jest.MockedFunction<(url: string) => any>;
+  get: jest.MockedFunction<(url: string, config?: any) => any>;
 };
 
 describe('ProductsBffController', () => {
@@ -30,12 +31,13 @@ describe('ProductsBffController', () => {
     jest.resetAllMocks();
     process.env.ORDERS_BASE = 'http://orders.local';
 
+    // service mock
     svc = {
       getById: jest.fn() as jest.MockedFunction<(id: number) => Promise<Product>>,
     };
 
     http = {
-      get: jest.fn((_url: string) =>
+      get: jest.fn((_url: string, _config?: any) =>
         of({
           status: 200,
           data: [
@@ -49,14 +51,14 @@ describe('ProductsBffController', () => {
             },
           ],
         }),
-      ),
+      ) as jest.MockedFunction<(url: string, config?: any) => any>,
     };
 
     const mod = await Test.createTestingModule({
       controllers: [ProductsBffController],
       providers: [
         { provide: ProductsService, useValue: svc },
-        { provide: HttpService, useValue: http }, 
+        { provide: HttpService, useValue: http },
       ],
     }).compile();
 
@@ -65,14 +67,21 @@ describe('ProductsBffController', () => {
 
   it('returns combined product + orders', async () => {
     const product: Product = {
-      id: 20, name: 'BFF Test', price: 1000, qty: 48, createdAt: new Date().toISOString(),
+      id: 20,
+      name: 'BFF Test',
+      price: 1000,
+      qty: 48,
+      createdAt: new Date().toISOString(),
     };
     svc.getById.mockResolvedValue(product);
 
     const res = await (ctrl as any).getWithOrders(20);
 
     expect(svc.getById).toHaveBeenCalledWith(20);
-    expect(http.get).toHaveBeenCalledWith(`${process.env.ORDERS_BASE}/orders/product/20`);
+    expect(http.get).toHaveBeenCalledWith(
+      `${process.env.ORDERS_BASE}/orders/product/20`,
+      expect.objectContaining({ timeout: 2500 }),
+    );
     expect(res).toMatchObject({
       product: { id: 20 },
       orders: expect.any(Array),
@@ -81,11 +90,15 @@ describe('ProductsBffController', () => {
 
   it('handles orders API non-200 by returning empty orders', async () => {
     const product: Product = {
-      id: 21, name: 'X', price: 500, qty: 10, createdAt: new Date().toISOString(),
+      id: 21,
+      name: 'X',
+      price: 500,
+      qty: 10,
+      createdAt: new Date().toISOString(),
     };
     svc.getById.mockResolvedValue(product);
 
-    http.get.mockImplementationOnce((_url: string) =>
+    http.get.mockImplementationOnce((_url: string, _config?: any) =>
       of({ status: 500, data: {} }),
     );
 

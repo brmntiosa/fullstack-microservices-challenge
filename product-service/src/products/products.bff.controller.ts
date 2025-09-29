@@ -2,7 +2,6 @@ import { Controller, Get, Param, ParseIntPipe, Req } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ProductsService } from './products.service';
-import type { FastifyRequest } from 'fastify';
 
 type OrderDto = {
   id: number;
@@ -23,30 +22,24 @@ export class ProductsBffController {
   @Get(':id-with-orders')
   async getWithOrders(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: FastifyRequest, 
+    @Req() req?: any, // <- biarkan fleksibel (Fastify/Express), boleh undefined saat unit test
   ) {
     const product = await this.svc.getById(id);
-
     const ordersBase = process.env.ORDERS_BASE ?? 'http://order-service:4000';
-    const rid = (req as any).requestId as string | undefined; 
+
+    // Interceptor kita menambahkan req.requestId; kalau tidak ada, biarkan undefined
+    const rid: string | undefined = req?.requestId;
 
     try {
       const resp = await lastValueFrom(
         this.http.get<OrderDto[]>(`${ordersBase}/orders/product/${id}`, {
-          headers: {
-            'X-Request-ID': rid ?? '',
-            'Accept': 'application/json',
-          },
-          timeout: 2500,                   
-          validateStatus: () => true,  
+          headers: rid ? { 'X-Request-ID': rid } : undefined,
+          timeout: 2500,
         }),
       );
-
-      const isOk = resp.status >= 200 && resp.status < 300;
-      const orders = isOk && Array.isArray(resp.data) ? resp.data : [];
+      const orders = Array.isArray(resp.data) ? resp.data : [];
       return { product, orders };
     } catch {
-   
       return { product, orders: [] };
     }
   }
