@@ -1,6 +1,6 @@
 # Fullstack Microservices Challenge (NestJS + Go)
 
-Monorepo microservices: **product-service (NestJS + Prisma)** & **order-service (Go)**. Event-driven via **RabbitMQ**, cache **Redis**, DB **MySQL**. Termasuk **BFF endpoint**, **validation & error handling**, **Request/Correlation ID**, **Jest 100% coverage**, dan **k6 load test 1000 req/s**.
+Monorepo microservices: **product-service (NestJS)** & **order-service (Go)**. Event-driven via **RabbitMQ**, cache **Redis**, DB **MySQL**. Termasuk **BFF endpoint**, **validation & error handling**, **Request/Correlation ID**, **Jest 100% coverage**, dan **k6 load test 1000 req/s**.
 
 ---
 ## Screenshots
