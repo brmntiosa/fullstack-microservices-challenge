@@ -3,7 +3,9 @@
 Monorepo microservices: **product-service (NestJS)** & **order-service (Go)**. Event-driven via **RabbitMQ**, cache **Redis**, DB **MySQL**. Termasuk **BFF endpoint**, **validation & error handling**, **Request/Correlation ID**, **Jest 100% coverage**, dan **k6 load test 1000 req/s**.
 
 ---
+
 ## Screenshots
+
 <small><em>Klik judul di bawah ini untuk membuka/menutup pratinjau.</em></small>
 
 <details>
@@ -47,23 +49,24 @@ Monorepo microservices: **product-service (NestJS)** & **order-service (Go)**. E
 </details>
 
 ---
+
 ## Arsitektur Singkat
 
 * **product-service (NestJS)**
 
   * CRUD Product (MySQL via Prisma).
-  * Redis cache untuk detail (`GET /products/:id`) + invalidasi saat update/delete/event.
+  * Redis cache untuk detail (GET `/products/:id`) + invalidasi saat update/delete/event.
   * **Consume** event `order.created` → decrement stok + invalidate cache.
-  * **BFF endpoint**: `GET /products/:id-with-orders` (gabung product + orders dari order-service).
+  * **BFF endpoint**: GET `/products/:id-with-orders` (gabung product + orders dari order-service).
   * **Validation** (`class-validator`) + **Global HTTP Error Filter** (uniform error JSON).
   * **RequestIdInterceptor** → set/forward `X-Request-ID` (trace end-to-end).
 
 * **order-service (Go)**
 
-  * `POST /orders` → validasi product (call product-service), insert DB, publish `order.created`, invalidate list cache.
-  * `GET /orders/product/:id` → cached Redis (TTL 60s).
+  * POST `/orders` → validasi product (call product-service), insert DB, publish `order.created`, invalidate list cache.
+  * GET `/orders/product/:id` → cached Redis (TTL 60s).
   * **Middleware**: `WithRequestID` (inject/forward header), `WithRecover` (panic-safe JSON error).
-  * **Optimisasi**: prepared statement insert, HTTP client reuse, in-memory price cache (SWR) untuk harga product.
+  * **Optimisasi**: prepared statement insert, HTTP client reuse, in-memory price cache (SWR).
 
 * **Infra (Docker Compose)**
 
@@ -72,38 +75,40 @@ Monorepo microservices: **product-service (NestJS)** & **order-service (Go)**. E
 
 **Event flow**
 
-1. `POST /orders` (Go) validasi product ke product-service.
+1. POST `/orders` (Go) validasi product ke product-service.
 2. Insert order → publish `order.created`.
 3. product-service consume event → decrement stok + invalidate cache.
 
 ---
+
 ### Environment Variables (.env)
 
 * Setiap service dikonfigurasi melalui berkas **`.env`** (koneksi database, Redis, RabbitMQ, serta base URL antar-service).
+* Template **`.env.example`** sudah tersedia di masing-masing service; salin menjadi `.env`, lalu sesuaikan nilainya bila diperlukan.
 
-* Template **`.env.example`** sudah tersedia di masing-masing service, salin menjadi `.env`, lalu sesuaikan nilainya bila diperlukan.
+**Cara pakai:**
 
-* **Cara pakai:**
+* **Linux/macOS**
 
-  * **Linux/macOS**
+  ```bash
+  cp product-service/.env.example product-service/.env
+  cp order-service/.env.example   order-service/.env
+  ```
+* **Windows PowerShell**
 
-    ```bash
-    cp product-service/.env.example product-service/.env
-    cp order-service/.env.example   order-service/.env
-    ```
-  * **Windows PowerShell**
+  ```powershell
+  Copy-Item product-service/.env.example product-service/.env
+  Copy-Item order-service/.env.example   order-service/.env
+  ```
+* **Windows CMD**
 
-    ```powershell
-    Copy-Item product-service/.env.example product-service/.env
-    Copy-Item order-service/.env.example   order-service/.env
-    ```
-  * **Windows CMD**
+  ```cmd
+  copy product-service\.env.example product-service\.env
+  copy order-service\.env.example   order-service\.env
+  ```
 
-    ```cmd
-    copy product-service\.env.example product-service\.env
-    copy order-service\.env.example   order-service\.env
-    ```
-    
+---
+
 ## Cara Menjalankan (Docker Compose)
 
 ```bash
@@ -117,17 +122,16 @@ docker compose ps
 
 * product-service: [http://localhost:3000](http://localhost:3000)
 * order-service: [http://localhost:4000](http://localhost:4000)
-* RabbitMQ UI: [http://localhost:15672](http://localhost:15672)  (guest / guest)
+* RabbitMQ UI: [http://localhost:15672](http://localhost:15672)  (guest/guest)
 * MySQL: localhost:3306  (user: app / pass: app, db: appdb)
 * Redis: localhost:6379
-
 
 ---
 
 ## Health Check
 
-* **product-service (NestJS)**: `GET /products` (atau endpoint apa saja yang sederhana).
-* **order-service (Go)**: `GET /health` → `"order-service up"`.
+* **product-service (NestJS)**: GET `/products` (endpoint sederhana).
+* **order-service (Go)**: GET `/health` → `{"status":"order-service up"}`.
 
 ```cmd
 curl.exe -s http://localhost:4000/health
@@ -163,81 +167,55 @@ AMQP_CONSUMER_TAG=order-service-logger
 
 ---
 
-## Contoh API (CMD • PowerShell • Bash)
+## Contoh API (CMD)
 
 ### **Cek log terlebih dulu (disarankan)**
-Buka terminal terpisah untuk memantau log layanan. Ini membantu melihat **cache MISS/HIT** di product-service dan alur **event order.created**.
 
-```bash
-# product-service (cache & event consumer)
+Buka terminal terpisah untuk memantau log layanan (cache MISS/HIT & event `order.created`).
+
+```cmd
 docker compose logs -f product-service
-
-# order-service (request masuk & publisher)
 docker compose logs -f order-service
-
-# Create product
-curl -s -H "Content-Type: application/json" `
-     -d '{"name":"BFF Test","price":1000,"qty":50}' `
-     http://localhost:3000/products
-# Catat nilai "id" dari output di atas (misal: 26)
-
-# Create order (ganti 26 dengan ID produk yang dibuat)
-curl -s -H "Content-Type: application/json" `
-     -d '{"productId":26,"qty":2}' `
-     http://localhost:4000/orders
-
-# BFF combined (produk + orders)
-curl -s "http://localhost:3000/products/26-with-orders"
-
-### CMD (Windows)
-
-```bat
-:: Create product
-curl -s -H "Content-Type: application/json" -d "{\"name\":\"BFF Test\",\"price\":1000,\"qty\":50}" http://localhost:3000/products
-
-:: Create order
-curl -s -H "Content-Type: application/json" -d "{\"productId\":26,\"qty\":2}" http://localhost:4000/orders
-
-:: BFF combined
-curl -s "http://localhost:3000/products/26-with-orders"
 ```
 
-### Linux/Mac (bash/zsh)
+### **Requests (CMD)**
 
-```bash
-curl -s -H "Content-Type: application/json" \
-  -d '{"name":"BFF Test","price":1000,"qty":50}' \
-  http://localhost:3000/products
+> Ganti **<ID>** dengan ID produk yang kamu buat. Di bawah ini juga ada contoh pakai **ID 40**.
 
-curl -s -H "Content-Type: application/json" \
-  -d '{"productId":26,"qty":2}' \
-  http://localhost:4000/orders
+```cmd
+:: 1) Create product
+curl.exe -s -H "Content-Type: application/json" -d "{\"name\":\"BFF Test\",\"price\":1000,\"qty\":50}" http://localhost:3000/products
 
-curl -s "http://localhost:3000/products/26-with-orders"
+:: (Opsional) Cek detail product contoh ID 40
+curl.exe -s http://localhost:3000/products/40
+
+:: 2) Create order (ganti <ID> dengan ID hasil create product, contoh pakai 40)
+curl.exe -s -H "Content-Type: application/json" -d "{\"productId\":40,\"qty\":2}" http://localhost:4000/orders
+
+:: 3) BFF combined (produk + orders) — contoh pakai 40
+curl.exe -s "http://localhost:3000/products/40-with-orders"
 ```
-
 
 ---
 
 ## Request ID / Correlation ID
 
-* **order-service (Go)**: `WithRequestID` akan meneruskan header **`X-Request-ID`** dari client. Jika tidak ada, maka akan **generate baru**. Response **selalu** mengembalikan header **`X-Request-Id`**.
-* **product-service (NestJS)**: `RequestIdInterceptor` akan menyetel atau meneruskan **`X-Request-ID`** ke downstream (termasuk call **BFF → order-service**). Hal ini memudahkan trace APM/log end-to-end.
+* **order-service (Go)**: `WithRequestID` meneruskan header **`X-Request-ID`** dari client; jika tidak ada, akan membuat baru. Response **selalu** mengembalikan header **`X-Request-Id`**.
+* **product-service (NestJS)**: `RequestIdInterceptor` menyetel/meneruskan **`X-Request-ID`** ke downstream (termasuk call **BFF → order-service**) untuk trace end-to-end.
 
-### Contoh pakai header custom
+**Contoh pakai header custom (CMD)**
 
 ```cmd
 curl.exe -i -H "X-Request-ID: demo-123" -H "Content-Type: application/json" -d "{\"productId\":ID_HERE,\"qty\":1}" http://localhost:4000/orders
 ```
 
-➡️ Response akan mengandung header:
+Respon akan memuat:
 
 ```
 X-Request-Id: demo-123
 ```
 
 ---
-
 
 ## Testing — product-service (Jest)
 
@@ -260,7 +238,7 @@ go test ./...
 ```
 
 * Ada unit test untuk GET (cache miss → hit).
-* Behavior kritikal lain tervalidasi saat k6 (black-box).
+* Perilaku kritikal lain tervalidasi saat k6 (black-box).
 
 ---
 
@@ -293,10 +271,9 @@ docker run --rm -i --network infra_default ^
 * Rate ~**1000 iters/s** stabil (lihat bagian `steady` / `ramp`).
 * `http_req_duration p(95) < 300ms`.
 * `http_req_failed < 1%`.
-  Export hasil: `k6/k6-results-docker.json` + sertakan screenshot `docs/K6.png`.
+* Export hasil: `k6/k6-results-docker.json` + sertakan screenshot `docs/K6.png`.
 
 ---
-
 
 ## Troubleshooting
 
@@ -310,20 +287,18 @@ docker run --rm -i --network infra_default ^
 2. **k6 tidak menemukan skrip / “function 'default' not found”**
 
    * Jalankan perintah dari folder `k6/`.
-   * Pastikan volume mount benar:
-     PowerShell: `-v "$PWD:/scripts"` • CMD: `-v "%CD%:/scripts"`.
-   * File yang dijalankan harus `orders.test.js` dan memiliki `export default function () { ... }`.
+   * Pastikan volume mount benar: PowerShell `-v "$PWD:/scripts"` • CMD `-v "%CD%:/scripts"`.
+   * File yang dijalankan harus `orders.test.js` dan punya `export default function () { ... }`.
 
 3. **RabbitMQ belum siap / connection refused**
 
    * Cek log: `docker compose logs rabbitmq`.
-   * Restart service yang bergantung:
-     `docker compose restart product-service order-service`.
+   * Restart service terkait: `docker compose restart product-service order-service`.
 
 4. **MySQL lambat saat uji beban**
 
    * Compose sudah menyetel opsi dev-friendly (`innodb_flush_log_at_trx_commit=2`, `sync_binlog=0`, `innodb_buffer_pool_size=1G`, `max_connections=500`).
-     Sesuaikan nilainya dengan kapasitas mesin bila perlu.
+     Sesuaikan dengan kapasitas mesin bila perlu.
 
 5. **Perilaku cache setelah stok berubah (MISS → HIT)**
 
@@ -334,9 +309,8 @@ docker run --rm -i --network infra_default ^
 
    * Kirim header kustom dan pastikan ikut dikembalikan:
 
-     ```
-     curl -i -H "X-Request-ID: demo-123" -H "Content-Type: application/json" \
-          -d '{"productId":26,"qty":1}' http://localhost:4000/orders
+     ```cmd
+     curl.exe -i -H "X-Request-ID: demo-123" -H "Content-Type: application/json" -d "{\"productId\":26,\"qty\":1}" http://localhost:4000/orders
      ```
 
      Respon harus memuat `X-Request-Id: demo-123`.
@@ -364,5 +338,3 @@ docker run --rm -i --network infra_default ^
 │   └── k6-results-docker.json
 └── README.md
 ```
-
----
