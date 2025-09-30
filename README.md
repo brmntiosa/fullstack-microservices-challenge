@@ -121,7 +121,6 @@ docker compose ps
 * MySQL: localhost:3306  (user: app / pass: app, db: appdb)
 * Redis: localhost:6379
 
-> Compose sudah menyetel environment antar-service (lihat `infra/docker-compose.yml`).
 
 ---
 
