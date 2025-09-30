@@ -129,8 +129,9 @@ docker compose ps
 * **product-service (NestJS)**: `GET /products` (atau endpoint apa saja yang sederhana).
 * **order-service (Go)**: `GET /health` → `"order-service up"`.
 
-```bash
-curl -s http://localhost:4000/health
+```cmd
+curl.exe -s http://localhost:4000/health
+curl.exe -s http://localhost:3000/products
 ```
 
 ---
@@ -164,22 +165,29 @@ AMQP_CONSUMER_TAG=order-service-logger
 
 ## Contoh API (CMD • PowerShell • Bash)
 
-### PowerShell
+### **Cek log terlebih dulu (disarankan)**
+Buka terminal terpisah untuk memantau log layanan. Ini membantu melihat **cache MISS/HIT** di product-service dan alur **event order.created**.
 
-```powershell
+```bash
+# product-service (cache & event consumer)
+docker compose logs -f product-service
+
+# order-service (request masuk & publisher)
+docker compose logs -f order-service
+
 # Create product
 curl -s -H "Content-Type: application/json" `
      -d '{"name":"BFF Test","price":1000,"qty":50}' `
      http://localhost:3000/products
+# Catat nilai "id" dari output di atas (misal: 26)
 
-# Create order (ganti 26 dengan ID produk)
+# Create order (ganti 26 dengan ID produk yang dibuat)
 curl -s -H "Content-Type: application/json" `
      -d '{"productId":26,"qty":2}' `
      http://localhost:4000/orders
 
-# BFF combined
+# BFF combined (produk + orders)
 curl -s "http://localhost:3000/products/26-with-orders"
-```
 
 ### CMD (Windows)
 
@@ -208,24 +216,28 @@ curl -s -H "Content-Type: application/json" \
 curl -s "http://localhost:3000/products/26-with-orders"
 ```
 
+
 ---
 
 ## Request ID / Correlation ID
 
-* **order-service (Go)**: `WithRequestID` meneruskan header `X-Request-ID` dari client, jika tidak ada, generate baru. Response **selalu** mengembalikan header `X-Request-Id`.
-* **product-service (NestJS)**: `RequestIdInterceptor` menyetel/forward `X-Request-ID` ke downstream (termasuk call BFF → order-service). Memudahkan trace APM/log end-to-end.
+* **order-service (Go)**: `WithRequestID` akan meneruskan header **`X-Request-ID`** dari client. Jika tidak ada, maka akan **generate baru**. Response **selalu** mengembalikan header **`X-Request-Id`**.
+* **product-service (NestJS)**: `RequestIdInterceptor` akan menyetel atau meneruskan **`X-Request-ID`** ke downstream (termasuk call **BFF → order-service**). Hal ini memudahkan trace APM/log end-to-end.
 
-**Contoh pakai header custom**
+### Contoh pakai header custom
 
-```bash
-curl -i -H "X-Request-ID: demo-123" \
-     -H "Content-Type: application/json" \
-     -d '{"productId":26,"qty":1}' \
-     http://localhost:4000/orders
-# → Response akan mengandung: X-Request-Id: demo-123
+```cmd
+curl.exe -i -H "X-Request-ID: demo-123" -H "Content-Type: application/json" -d "{\"productId\":ID_HERE,\"qty\":1}" http://localhost:4000/orders
+```
+
+➡️ Response akan mengandung header:
+
+```
+X-Request-Id: demo-123
 ```
 
 ---
+
 
 ## Testing — product-service (Jest)
 
